@@ -1,12 +1,12 @@
 <div align="center">
 
-# 🧬 Organic OS
+# 🧬 six6
 
 **6-Module Organic AI Agent Ecosystem built with absolute file-system decoupling.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![OpenClaw Skill](https://img.shields.io/badge/OpenClaw-Skill-blue.svg)](https://github.com/openclaw/openclaw)
-[![GitHub stars](https://img.shields.io/github/stars/ythx-101/organic-os?style=social)](https://github.com/ythx-101/organic-os)
+[![GitHub stars](https://img.shields.io/github/stars/ythx-101/six6?style=social)](https://github.com/ythx-101/six6)
 
 *Modular · Plug-and-Play · State via File System · Works everywhere*
 
@@ -23,7 +23,7 @@ You: "I want an AI Agent that can think, remember, and generate ideas."
 Current frameworks: "Here is a massive 1GB monolithic orchestrator with tight Python couplings."
 ```
 
-Organic OS decomposes the core cognitive functions of an AI Agent into **6 independent modules**. They do not import each other. They do not share memory space. They communicate entirely through a standardized set of files (Markdown & JSONL).
+six6 decomposes the core cognitive functions of an AI Agent into **6 independent modules**. They do not import each other. They do not share memory space. They communicate entirely through a standardized set of files (Markdown & JSONL).
 
 You can install just the memory system, or you can install the entire suite to create a living, breathing organic AI entity.
 
@@ -62,7 +62,7 @@ Read the detailed [ARCHITECTURE.md](ARCHITECTURE.md) for data flow specification
 
 1. Clone the repository into your skills directory:
    ```bash
-   git clone https://github.com/ythx-101/organic-os.git
+   git clone https://github.com/ythx-101/six6.git
    ```
 2. Check the `ARCHITECTURE.md` file to understand the required file structures.
 3. Hook any or all modules into your agent's cron or trigger system.

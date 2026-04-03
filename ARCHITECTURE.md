@@ -1,6 +1,6 @@
-# Organic OS Architecture
+# six6 Architecture
 
-This document defines the standard data flow and file system conventions for the 6 core organic-os modules.
+This document defines the standard data flow and file system conventions for the 6 core six6 modules.
 Each module operates independently and communicates strictly via these file standards, achieving absolute decoupling.
 
 ## 1. skill-memory (脑皮层)

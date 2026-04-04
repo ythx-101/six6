@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "six6 Inbox Item",
+  "type": "object",
+  "required": [
+    "type",
+    "ts"
+  ],
+  "properties": {
+    "type": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ts": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "msg": {
+      "type": "string"
+    },
+    "seed_id": {
+      "type": "string"
+    },
+    "issue_number": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "reason": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    },
+    "event": {
+      "type": "string"
+    },
+    "topic": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "repo": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

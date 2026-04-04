@@ -1,0 +1,18 @@
+# six6 cron schedule example
+# Replace the placeholders before adding to your user crontab with `crontab -e`.
+#
+#   <SIX6_DIR>   - absolute path to the six6 repository root
+#   <BASE_DIR>   - absolute path to your agent base directory
+#   <LOG_DIR>    - absolute path to a writable log directory
+#
+# Heartbeat every 5 minutes
+*/5 * * * *  python3 <SIX6_DIR>/runtime/scripts/six6.py pulse heartbeat --base-dir <BASE_DIR> >> <LOG_DIR>/heartbeat.log 2>&1
+
+# Daily pulse at 08:00
+0 8 * * *    python3 <SIX6_DIR>/runtime/scripts/six6.py pulse daily     --base-dir <BASE_DIR> >> <LOG_DIR>/daily.log 2>&1
+
+# Nightly synthesis at 23:30
+30 23 * * *  python3 <SIX6_DIR>/runtime/scripts/six6.py pulse nightly   --base-dir <BASE_DIR> >> <LOG_DIR>/nightly.log 2>&1
+
+# Idle daydream every 30 minutes
+*/30 * * * * python3 <SIX6_DIR>/runtime/scripts/six6.py pulse idle      --base-dir <BASE_DIR> >> <LOG_DIR>/idle.log 2>&1

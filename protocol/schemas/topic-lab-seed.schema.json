@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "six6 Topic Lab Seed",
+  "type": "object",
+  "required": [
+    "id",
+    "topic",
+    "description",
+    "source",
+    "maturity",
+    "created_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "topic": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1
+    },
+    "maturity": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "created_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "planted",
+        "composted"
+      ]
+    },
+    "repo": {
+      "type": "string"
+    },
+    "planted_issue_url": {
+      "type": "string"
+    },
+    "last_event": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

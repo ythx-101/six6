@@ -3,6 +3,7 @@ import json
 import argparse
 import datetime
 import subprocess
+import tempfile
 
 def load_seeds(filepath):
     if not os.path.exists(filepath):
@@ -19,9 +20,25 @@ def load_seeds(filepath):
 
 def save_seeds(filepath, seeds):
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
-    with open(filepath, "w", encoding="utf-8") as f:
-        for seed in seeds:
-            f.write(json.dumps(seed, ensure_ascii=False) + "\n")
+    fd, tmp_path = tempfile.mkstemp(prefix="seeds-", suffix=".jsonl", dir=os.path.dirname(filepath))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            for seed in seeds:
+                f.write(json.dumps(seed, ensure_ascii=False) + "\n")
+        os.replace(tmp_path, filepath)
+    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+def emit_inbox_event(base_dir, payload):
+    inbox_path = os.path.join(base_dir, "data", "inbox.jsonl")
+    os.makedirs(os.path.dirname(inbox_path), exist_ok=True)
+    payload = dict(payload)
+    payload.setdefault("type", "topic-lab-event")
+    payload.setdefault("source", "skill-topic-lab")
+    payload.setdefault("ts", int(datetime.datetime.now().timestamp()))
+    with open(inbox_path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(payload, ensure_ascii=False) + "\n")
 
 def plant_seed(seed):
     """Convert a mature seed into a GitHub Issue."""
@@ -33,15 +50,19 @@ def plant_seed(seed):
         # Assumes `gh` CLI is authenticated and repo is set (or runs in repo context)
         # Using a dry-run style print for the OS skeleton, but executing the command if possible
         cmd = ["gh", "issue", "create", "--title", title, "--body", body, "--label", "idea"]
-        subprocess.run(cmd, check=True, capture_output=True)
+        if seed.get("repo"):
+            cmd.extend(["--repo", seed["repo"]])
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        issue_url = result.stdout.strip()
         print("✅ Issue created successfully.")
-        return True
+        return True, issue_url
     except FileNotFoundError:
         print("⚠️ `gh` CLI not found. Skipping issue creation.")
-        return False
+        return False, ""
     except subprocess.CalledProcessError as e:
-        print(f"❌ Failed to create issue. Error: {e.stderr.decode('utf-8')}")
-        return False
+        stderr = e.stderr if isinstance(e.stderr, str) else e.stderr.decode("utf-8")
+        print(f"❌ Failed to create issue. Error: {stderr}")
+        return False, ""
 
 def main():
     parser = argparse.ArgumentParser(description="Run daily maintenance on the Topic Lab (Farm).")
@@ -63,7 +84,14 @@ def main():
         for seed in seeds:
             if seed.get("id") == args.add_water and seed.get("status", "active") == "active":
                 seed["maturity"] = min(100, seed.get("maturity", 0) + 10)
+                seed["last_event"] = "watered"
                 print(f"💧 Watered seed '{seed.get('topic')}'. Maturity is now {seed['maturity']}.")
+                emit_inbox_event(args.base_dir, {
+                    "event": "seed-watered",
+                    "seed_id": seed.get("id"),
+                    "topic": seed.get("topic"),
+                    "status": seed.get("status", "active"),
+                })
             updated_seeds.append(seed)
         save_seeds(seeds_file, updated_seeds)
         return
@@ -80,15 +108,32 @@ def main():
             
             # Check maturity thresholds
             if maturity >= 80:
-                success = plant_seed(seed)
+                success, issue_url = plant_seed(seed)
                 if success:
                     seed["status"] = "planted"
+                    seed["planted_issue_url"] = issue_url
+                    seed["last_event"] = "planted"
+                    emit_inbox_event(args.base_dir, {
+                        "event": "seed-planted",
+                        "seed_id": seed.get("id"),
+                        "topic": seed.get("topic"),
+                        "status": "planted",
+                        "msg": f"Seed planted into GitHub Issue: {seed.get('topic')}",
+                    })
             else:
                 # Apply decay
                 seed["maturity"] = max(0, maturity - 5)
                 if seed["maturity"] <= 20:
                     print(f"🍂 Seed '{seed.get('topic')}' withered (composted) due to low maturity.")
                     seed["status"] = "composted"
+                    seed["last_event"] = "composted"
+                    emit_inbox_event(args.base_dir, {
+                        "event": "seed-composted",
+                        "seed_id": seed.get("id"),
+                        "topic": seed.get("topic"),
+                        "status": "composted",
+                        "msg": f"Seed composted after decay: {seed.get('topic')}",
+                    })
             
             updated_seeds.append(seed)
             

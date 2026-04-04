@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "six6 Health",
+  "type": "object",
+  "required": [
+    "updated_at",
+    "status",
+    "base_dir",
+    "modules"
+  ],
+  "properties": {
+    "updated_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ok",
+        "warn",
+        "error"
+      ]
+    },
+    "base_dir": {
+      "type": "string",
+      "minLength": 1
+    },
+    "modules": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": true
+}

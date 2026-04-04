@@ -1,0 +1,41 @@
+# six6 systemd service and timer example
+# Replace the placeholders before installing.
+#
+#   <USER>       - the OS user that should run the service
+#   <SIX6_DIR>   - absolute path to the six6 repository root
+#   <BASE_DIR>   - absolute path to your agent base directory
+#
+# Install:
+#   sudo cp six6-heartbeat.service /etc/systemd/system/
+#   sudo cp six6-heartbeat.timer /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now six6-heartbeat.timer
+
+# six6-heartbeat.service
+
+[Unit]
+Description=six6 heartbeat pulse
+After=network.target
+
+[Service]
+Type=oneshot
+User=<USER>
+ExecStart=python3 <SIX6_DIR>/runtime/scripts/six6.py pulse heartbeat --base-dir <BASE_DIR>
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+
+# six6-heartbeat.timer
+
+[Unit]
+Description=Run six6 heartbeat pulse every 5 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+Unit=six6-heartbeat.service
+
+[Install]
+WantedBy=timers.target

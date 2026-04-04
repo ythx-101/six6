@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Compile Python scripts
+        run: |
+          python -m py_compile \
+            skill-monitor/scripts/pulse.py \
+            skill-autoloop/scripts/process_inbox.py \
+            skill-topic-lab/scripts/farm.py \
+            runtime/scripts/six6.py \
+            distribution/migrate_from_clawd.py
+
+      - name: Validate bundled demo base dir
+        run: |
+          python runtime/scripts/six6.py validate --base-dir demo
+
+      - name: Run install flow
+        run: |
+          tmpdir="$(mktemp -d)"
+          bash distribution/install.sh --base-dir "$tmpdir" --six6-dir "$PWD"
+          test -f "$tmpdir/examples/cron.example"
+          test -f "$tmpdir/examples/systemd.example"
+          python runtime/scripts/six6.py validate --base-dir "$tmpdir"
+
+      - name: Run migration flow
+        run: |
+          srcdir="$(mktemp -d)"
+          tmpdir="$(mktemp -d)"
+
+          mkdir -p "$srcdir/memory" "$srcdir/data"
+          printf '# now\n' > "$srcdir/NOW.md"
+          printf '# memory\n' > "$srcdir/MEMORY.md"
+          printf 'day1\n' > "$srcdir/memory/2026-04-04.md"
+          printf '%s\n' '{"type":"x-todo","msg":"migrate","ts":1}' > "$srcdir/data/inbox.jsonl"
+          printf '%s\n' '{"id":"seed-1","topic":"t","description":"d","source":"s","maturity":10,"created_at":"2026-04-04T00:00:00"}' > "$srcdir/data/topic-lab-seeds.jsonl"
+
+          bash distribution/install.sh --base-dir "$tmpdir" --six6-dir "$PWD"
+          python distribution/migrate_from_clawd.py --source-dir "$srcdir" --base-dir "$tmpdir"
+          python runtime/scripts/six6.py validate --base-dir "$tmpdir"
+
+      - name: Run lightweight pulse checks
+        run: |
+          tmpdir="$(mktemp -d)"
+          python runtime/scripts/six6.py init --base-dir "$tmpdir"
+          python runtime/scripts/six6.py pulse heartbeat --base-dir "$tmpdir"
+          python runtime/scripts/six6.py doctor --base-dir "$tmpdir"

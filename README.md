@@ -6,6 +6,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![OpenClaw Skill](https://img.shields.io/badge/OpenClaw-Skill-blue.svg)](https://github.com/openclaw/openclaw)
+[![CI](https://github.com/ythx-101/six6/actions/workflows/ci.yml/badge.svg)](https://github.com/ythx-101/six6/actions/workflows/ci.yml)
 [![GitHub stars](https://img.shields.io/github/stars/ythx-101/six6?style=social)](https://github.com/ythx-101/six6)
 
 *Modular · Plug-and-Play · State via File System · Works everywhere*

@@ -80,6 +80,11 @@ Read the detailed [ARCHITECTURE.md](ARCHITECTURE.md) for data flow specification
    ```bash
    python3 runtime/scripts/six6.py validate --base-dir /path/to/agent/root
    ```
+6. Try the included sample base directory:
+   ```bash
+   python3 runtime/scripts/six6.py validate --base-dir demo
+   python3 runtime/scripts/six6.py pulse heartbeat --base-dir demo
+   ```
 
 ## 📄 License
 

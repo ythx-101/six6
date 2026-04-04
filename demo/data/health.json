@@ -1,0 +1,19 @@
+{
+  "updated_at": "2026-04-04T11:09:31.333047",
+  "status": "ok",
+  "base_dir": "/Users/linyu/six6/demo",
+  "checks": {
+    "base_dir_exists": true,
+    "memory_dir_exists": true,
+    "data_dir_exists": true,
+    "gh_available": true
+  },
+  "modules": {
+    "skill-memory": true,
+    "skill-meditation": true,
+    "skill-daydream": true,
+    "skill-topic-lab": true,
+    "skill-autoloop": true,
+    "skill-monitor": true
+  }
+}

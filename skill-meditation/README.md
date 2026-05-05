@@ -14,15 +14,28 @@ The meditation script uses pure standard Python `urllib` to make HTTP POST reque
 You can run the meditation script manually or via cron (`skill-monitor`).
 
 ```bash
+# Standard OpenAI Configuration
 export LLM_API_BASE="https://api.openai.com/v1"
 export LLM_API_KEY="sk-..."
 export LLM_MODEL="gpt-4o"
 
+# Optional: Multi-Provider & Generation Settings
+export LLM_API_TYPE="openai"       # Set to "anthropic" for Claude/MiniMax Anthropic endpoints (Auto-detected from API Base)
+export MEDITATION_TEMPERATURE="0.3" # Adjust creativity (Default 0.3 for focused consolidation)
+
 python3 scripts/meditate.py --base-dir /path/to/agent/root
 ```
 
+
+> [!IMPORTANT]
+> **Configuration Strictness**
+> Please configure the environment variables exactly as shown in the examples above:
+> - **`LLM_API_BASE`**: Pay attention to the trailing path. For OpenAI, include `/v1` (the script appends `/chat/completions`). For Anthropic-compatible endpoints, do **not** include `/v1` (the script automatically appends `/v1/messages`), otherwise it will result in a malformed double `/v1/v1/` URL.
+> - **`LLM_API_TYPE`**: If set manually, it must be strict lowercase (`openai` or `anthropic`).
+> - **`MEDITATION_TEMPERATURE`**: Must be a valid float string (e.g., `0.3`).
+
 ### Compatible with Any Local/Cloud LLM
-Because it uses the standard OpenAI API shape, you can point it to:
+Because it natively supports both OpenAI and Anthropic API shapes (and automatically filters `<think>` tags for reasoning models), you can point it to:
 - **Local Ollama**: `LLM_API_BASE="http://localhost:11434/v1" LLM_API_KEY="ollama" LLM_MODEL="llama3"`
-- **LM Studio**: `LLM_API_BASE="http://localhost:1234/v1"`
-- **DeepSeek / Gemini / Claude (via proxies)**.
+- **Anthropic / MiniMax**: `LLM_API_BASE="https://api.minimax.io/anthropic" LLM_MODEL="MiniMax-M2.7"`
+- **DeepSeek-R1** (Thinking tags will be safely filtered out).

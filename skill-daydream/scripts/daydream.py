@@ -7,24 +7,67 @@ import datetime
 import urllib.request
 import argparse
 
-def call_llm(api_base, api_key, model, prompt):
-    url = f"{api_base.rstrip('/')}/chat/completions"
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}"
-    }
-    data = {
-        "model": model,
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.8  # Higher temperature for daydreaming/creativity
-    }
+def call_llm(api_base, api_key, model, prompt, api_type=None, temperature=0.8):
+    # Auto-detect API type if not provided
+    if not api_type:
+        if "anthropic" in api_base.lower():
+            api_type = "anthropic"
+        else:
+            api_type = "openai"
+
+    if api_type == "anthropic":
+        url = f"{api_base.rstrip('/')}/v1/messages"
+        headers = {
+            "Content-Type": "application/json",
+            "x-api-key": api_key,
+            "anthropic-version": "2023-06-01"
+        }
+        data = {
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 4096,
+            "temperature": float(temperature)
+        }
+    else:  # Default to OpenAI-compatible
+        url = f"{api_base.rstrip('/')}/chat/completions"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}"
+        }
+        data = {
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": float(temperature)
+        }
+
     req = urllib.request.Request(url, data=json.dumps(data).encode("utf-8"), headers=headers)
     try:
-        with urllib.request.urlopen(req) as response:
+        with urllib.request.urlopen(req, timeout=60) as response:
             result = json.loads(response.read().decode("utf-8"))
-            return result["choices"][0]["message"]["content"]
+            if api_type == "anthropic":
+                # Handle potential errors in response structure
+                if "content" not in result:
+                    print(f"Unexpected response structure: {result}")
+                    return None
+                content = "".join([c["text"] for c in result["content"] if c.get("type") == "text"])
+            else:
+                if "choices" not in result or not result["choices"]:
+                    print(f"Unexpected response structure: {result}")
+                    return None
+                content = result["choices"][0]["message"]["content"]
+            
+            # Filter out <think>...</think> blocks (case-insensitive)
+            if content:
+                content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL | re.IGNORECASE).strip()
+            
+            return content
     except Exception as e:
-        print(f"Error calling LLM: {e}")
+        print(f"Error calling LLM ({api_type}): {e}")
+        if hasattr(e, 'read'):
+            try:
+                print(f"Response details: {e.read().decode('utf-8')}")
+            except:
+                pass
         return None
 
 def main():
@@ -33,6 +76,8 @@ def main():
     parser.add_argument("--api-base", default=os.environ.get("LLM_API_BASE", "https://api.openai.com/v1"), help="OpenAI-compatible API Base URL")
     parser.add_argument("--api-key", default=os.environ.get("LLM_API_KEY", ""), help="API Key")
     parser.add_argument("--model", default=os.environ.get("LLM_MODEL", "gpt-4o"), help="Model to use")
+    parser.add_argument("--temperature", type=float, default=float(os.environ.get("DAYDREAM_TEMPERATURE", "0.8")), help="Temperature for generation")
+    parser.add_argument("--api-type", default=os.environ.get("LLM_API_TYPE", ""), help="API Type (openai or anthropic)")
     args = parser.parse_args()
 
     if not args.api_key:
@@ -93,11 +138,12 @@ Example:
 """
 
     print(f"☁️ Daydreaming... cross-pollinating {sample_size} memory fragments using {args.model}...")
-    response = call_llm(args.api_base, args.api_key, args.model, prompt)
+    response = call_llm(args.api_base, args.api_key, args.model, prompt, args.api_type, args.temperature)
     if not response:
         return
 
-    seed_match = re.search(r"<seed>\n?(.*?)\n?</seed>", response, re.DOTALL)
+    # Case-insensitive tag matching and handle extra whitespace
+    seed_match = re.search(r"<seed>\s*(.*?)\s*</seed>", response, re.DOTALL | re.IGNORECASE)
     if seed_match:
         try:
             seed_data = json.loads(seed_match.group(1).strip())

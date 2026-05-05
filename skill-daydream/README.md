@@ -10,7 +10,7 @@ This module provides the Agent with a serendipitous ideation mechanism. It rando
 
 Instead of linear task execution, `skill-daydream` introduces *mutation* into the Agent's thought process. By reading random historical logs, the LLM is prompted with a high-temperature setting to find non-obvious connections.
 
-The resulting "seeds" start with a base `maturity` of `10` and are handed off to the `skill-topic-lab` for nurturing or eventual pruning.
+The resulting "seeds" start with a base `maturity` of `30` so they survive at least one farm review before being nurtured or pruned.
 
 ## Usage
 
@@ -30,7 +30,7 @@ The JSON object written to `topic-lab-seeds.jsonl` follows this exact schema:
   "topic": "String",
   "description": "String",
   "source": "skill-daydream",
-  "maturity": 10,
+  "maturity": 30,
   "created_at": "ISO-8601 Timestamp"
 }
 ```

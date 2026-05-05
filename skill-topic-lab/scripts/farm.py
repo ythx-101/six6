@@ -121,10 +121,11 @@ def main():
                         "msg": f"Seed planted into GitHub Issue: {seed.get('topic')}",
                     })
             else:
-                # Apply decay
+                # Apply decay. Compost only at zero so fresh low-maturity
+                # daydream seeds are not killed by their first farm tick.
                 seed["maturity"] = max(0, maturity - 5)
-                if seed["maturity"] <= 20:
-                    print(f"🍂 Seed '{seed.get('topic')}' withered (composted) due to low maturity.")
+                if seed["maturity"] == 0:
+                    print(f"🍂 Seed '{seed.get('topic')}' withered (composted) after reaching zero maturity.")
                     seed["status"] = "composted"
                     seed["last_event"] = "composted"
                     emit_inbox_event(args.base_dir, {
@@ -132,7 +133,7 @@ def main():
                         "seed_id": seed.get("id"),
                         "topic": seed.get("topic"),
                         "status": "composted",
-                        "msg": f"Seed composted after decay: {seed.get('topic')}",
+                        "msg": f"Seed composted after reaching zero maturity: {seed.get('topic')}",
                     })
             
             updated_seeds.append(seed)

@@ -103,7 +103,7 @@ Example:
             seed_data = json.loads(seed_match.group(1).strip())
             seed_data["id"] = f"dd-{uuid.uuid4().hex[:8]}"
             seed_data["source"] = "skill-daydream"
-            seed_data["maturity"] = 10  # Initial maturity for daydream seeds
+            seed_data["maturity"] = 30  # Initial maturity; survives the first farm review
             seed_data["created_at"] = datetime.datetime.now().isoformat()
             
             os.makedirs(os.path.dirname(seeds_file), exist_ok=True)

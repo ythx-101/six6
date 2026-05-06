@@ -6,6 +6,11 @@ import os
 import subprocess
 import sys
 
+try:
+    from logger_helper import setup_six6_logging
+except ImportError:  # pragma: no cover - keeps direct script use resilient
+    setup_six6_logging = None
+
 
 MODULES = [
     "skill-memory",
@@ -20,6 +25,36 @@ MODULES = [
 def repo_root():
     return os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
+
+
+def load_dotenv_values(path):
+    values = {}
+    if not os.path.exists(path):
+        return values
+    with open(path, "r", encoding="utf-8") as handle:
+        for raw_line in handle:
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key:
+                values[key] = value
+    return values
+
+
+def default_base_dir():
+    env_value = os.environ.get("SIX6_BASE_DIR")
+    if env_value:
+        return os.path.abspath(os.path.expanduser(env_value))
+
+    for env_path in (os.path.join(os.getcwd(), ".env"), os.path.join(repo_root(), ".env")):
+        file_value = load_dotenv_values(env_path).get("SIX6_BASE_DIR")
+        if file_value:
+            return os.path.abspath(os.path.expanduser(file_value))
+
+    return repo_root()
 
 def load_jsonl(path):
     items = []
@@ -145,29 +180,32 @@ def main():
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     init_parser = subparsers.add_parser("init")
-    init_parser.add_argument("--base-dir", default=repo_root())
+    init_parser.add_argument("--base-dir", default=None)
 
     validate_parser = subparsers.add_parser("validate")
-    validate_parser.add_argument("--base-dir", default=repo_root())
+    validate_parser.add_argument("--base-dir", default=None)
 
     doctor_parser = subparsers.add_parser("doctor")
-    doctor_parser.add_argument("--base-dir", default=repo_root())
+    doctor_parser.add_argument("--base-dir", default=None)
 
     pulse_parser = subparsers.add_parser("pulse")
     pulse_parser.add_argument("pulse_type", choices=["heartbeat", "daily", "nightly", "idle"])
-    pulse_parser.add_argument("--base-dir", default=repo_root())
+    pulse_parser.add_argument("--base-dir", default=None)
 
     args = parser.parse_args()
+    args.base_dir = os.path.abspath(args.base_dir or default_base_dir())
+    if setup_six6_logging:
+        setup_six6_logging("runtime", args.base_dir)
 
     if args.command == "init":
-        init_base_dir(os.path.abspath(args.base_dir))
+        init_base_dir(args.base_dir)
         return
     if args.command == "validate":
-        raise SystemExit(validate_base_dir(os.path.abspath(args.base_dir)))
+        raise SystemExit(validate_base_dir(args.base_dir))
     if args.command == "doctor":
-        raise SystemExit(doctor(os.path.abspath(args.base_dir)))
+        raise SystemExit(doctor(args.base_dir))
     if args.command == "pulse":
-        raise SystemExit(pulse(os.path.abspath(args.base_dir), args.pulse_type))
+        raise SystemExit(pulse(args.base_dir, args.pulse_type))
 
 
 if __name__ == "__main__":

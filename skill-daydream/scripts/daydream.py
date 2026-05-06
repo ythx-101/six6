@@ -4,71 +4,78 @@ import json
 import uuid
 import random
 import datetime
+import urllib.error
 import urllib.request
 import argparse
 
-def call_llm(api_base, api_key, model, prompt, api_type=None, temperature=0.8):
-    # Auto-detect API type if not provided
+
+def _response_snippet(error):
+    try:
+        body = error.read().decode("utf-8", errors="replace")
+    except Exception:
+        return ""
+    body = re.sub(r'("(?:api[_-]?key|token|secret|authorization)"\s*:\s*")[^"\n]+', r'\1***', body, flags=re.IGNORECASE)
+    return body[:500]
+
+
+def call_llm(api_base, api_key, model, prompt, api_type=None, temperature=0.8, retries=2):
     if not api_type:
-        if "anthropic" in api_base.lower():
-            api_type = "anthropic"
-        else:
-            api_type = "openai"
+        api_type = "anthropic" if "anthropic" in api_base.lower() else "openai"
 
     if api_type == "anthropic":
         url = f"{api_base.rstrip('/')}/v1/messages"
         headers = {
             "Content-Type": "application/json",
             "x-api-key": api_key,
-            "anthropic-version": "2023-06-01"
+            "anthropic-version": "2023-06-01",
         }
         data = {
             "model": model,
             "messages": [{"role": "user", "content": prompt}],
             "max_tokens": 4096,
-            "temperature": float(temperature)
+            "temperature": float(temperature),
         }
-    else:  # Default to OpenAI-compatible
+    else:
         url = f"{api_base.rstrip('/')}/chat/completions"
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}"
+            "Authorization": f"Bearer {api_key}",
         }
         data = {
             "model": model,
             "messages": [{"role": "user", "content": prompt}],
-            "temperature": float(temperature)
+            "temperature": float(temperature),
         }
 
     req = urllib.request.Request(url, data=json.dumps(data).encode("utf-8"), headers=headers)
-    try:
-        with urllib.request.urlopen(req, timeout=60) as response:
-            result = json.loads(response.read().decode("utf-8"))
-            if api_type == "anthropic":
-                # Handle potential errors in response structure
-                if "content" not in result:
-                    print(f"Unexpected response structure: {result}")
-                    return None
-                content = "".join([c["text"] for c in result["content"] if c.get("type") == "text"])
-            else:
-                if "choices" not in result or not result["choices"]:
-                    print(f"Unexpected response structure: {result}")
-                    return None
-                content = result["choices"][0]["message"]["content"]
-            
-            # Filter out <think>...</think> blocks (case-insensitive)
-            if content:
-                content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL | re.IGNORECASE).strip()
-            
-            return content
-    except Exception as e:
-        print(f"Error calling LLM ({api_type}): {e}")
-        if hasattr(e, 'read'):
-            try:
-                print(f"Response details: {e.read().decode('utf-8')}")
-            except:
-                pass
-        return None
+    attempts = max(1, int(retries) + 1)
+    for attempt in range(1, attempts + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=60) as response:
+                result = json.loads(response.read().decode("utf-8"))
+                if api_type == "anthropic":
+                    if "content" not in result:
+                        print(f"Unexpected response structure keys: {sorted(result.keys())}")
+                        return None
+                    content = "".join(c["text"] for c in result["content"] if c.get("type") == "text")
+                else:
+                    if "choices" not in result or not result["choices"]:
+                        print(f"Unexpected response structure keys: {sorted(result.keys())}")
+                        return None
+                    content = result["choices"][0]["message"]["content"]
+
+                if content:
+                    content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL | re.IGNORECASE).strip()
+                return content
+        except urllib.error.HTTPError as exc:
+            print(f"HTTPError calling LLM ({api_type}) attempt {attempt}/{attempts}: status={exc.code} reason={exc.reason}")
+            snippet = _response_snippet(exc)
+            if snippet:
+                print(f"Response snippet: {snippet}")
+        except Exception as exc:
+            print(f"Error calling LLM ({api_type}) attempt {attempt}/{attempts}: {type(exc).__name__}: {exc}")
+
+    return None
 
 def main():
     parser = argparse.ArgumentParser(description="Run random daydreaming to generate ideas.")
@@ -78,6 +85,7 @@ def main():
     parser.add_argument("--model", default=os.environ.get("LLM_MODEL", "gpt-4o"), help="Model to use")
     parser.add_argument("--temperature", type=float, default=float(os.environ.get("DAYDREAM_TEMPERATURE", "0.8")), help="Temperature for generation")
     parser.add_argument("--api-type", default=os.environ.get("LLM_API_TYPE", ""), help="API Type (openai or anthropic)")
+    parser.add_argument("--retries", type=int, default=int(os.environ.get("LLM_RETRIES", "2")), help="Retry count for transient LLM failures")
     args = parser.parse_args()
 
     if not args.api_key:
@@ -91,22 +99,19 @@ def main():
         print(f"⚠️ Memory directory not found at {mem_dir}. Cannot daydream without memories.")
         return
 
-    # Gather memory files
     all_files = [os.path.join(mem_dir, f) for f in os.listdir(mem_dir) if f.endswith(".md")]
     if not all_files:
         print("⚠️ No memory files found. Cannot daydream.")
         return
 
-    # Pick 2-3 random memory files
     sample_size = min(random.randint(2, 3), len(all_files))
     sampled_files = random.sample(all_files, sample_size)
-    
+
     fragments = []
     for fpath in sampled_files:
         date_str = os.path.basename(fpath).replace(".md", "")
         with open(fpath, "r", encoding="utf-8") as f:
             lines = [l for l in f.readlines() if l.strip() and not l.startswith("#")]
-            # Extract a few random lines to simulate fragmented memory recall
             if lines:
                 sample_lines = random.sample(lines, min(3, len(lines)))
                 fragments.append(f"[{date_str}] " + " | ".join([l.strip() for l in sample_lines]))
@@ -138,7 +143,7 @@ Example:
 """
 
     print(f"☁️ Daydreaming... cross-pollinating {sample_size} memory fragments using {args.model}...")
-    response = call_llm(args.api_base, args.api_key, args.model, prompt, args.api_type, args.temperature)
+    response = call_llm(args.api_base, args.api_key, args.model, prompt, args.api_type, args.temperature, args.retries)
     if not response:
         return
 
@@ -151,11 +156,11 @@ Example:
             seed_data["source"] = "skill-daydream"
             seed_data["maturity"] = 30  # Initial maturity; survives the first farm review
             seed_data["created_at"] = datetime.datetime.now().isoformat()
-            
+
             os.makedirs(os.path.dirname(seeds_file), exist_ok=True)
             with open(seeds_file, "a", encoding="utf-8") as f:
                 f.write(json.dumps(seed_data, ensure_ascii=False) + "\n")
-            
+
             print(f"💡 Idea generated and planted in Topic Lab: {seed_data['topic']}")
         except json.JSONDecodeError:
             print("❌ Failed to parse LLM output as JSON.")

@@ -15,26 +15,28 @@ The system responds to 4 standard "pulses":
 
 ## Usage
 
+Without `--base-dir`, state is written into the six6 repo root. Always pass `--base-dir` pointing at your agent root. The recommended cron template is [`distribution/templates/cron.example`](../distribution/templates/cron.example).
+
 You should map these commands to your host machine's `crontab` or your orchestrator's equivalent:
 
 ```bash
 # Frequent heartbeat
-python3 scripts/pulse.py heartbeat
+python3 scripts/pulse.py --base-dir /path/to/agent/root heartbeat
 
 # Daily tick
-python3 scripts/pulse.py daily
+python3 scripts/pulse.py --base-dir /path/to/agent/root daily
 
 # Nightly reflection
-python3 scripts/pulse.py nightly
+python3 scripts/pulse.py --base-dir /path/to/agent/root nightly
 
 # Random daydreaming
-python3 scripts/pulse.py idle
+python3 scripts/pulse.py --base-dir /path/to/agent/root idle
 ```
 
 ### Example Linux Crontab Setup
 ```crontab
-*/5 * * * * /usr/bin/python3 /path/to/six6/skill-monitor/scripts/pulse.py heartbeat >> /tmp/agent_heartbeat.log 2>&1
-0 10 * * *  /usr/bin/python3 /path/to/six6/skill-monitor/scripts/pulse.py daily
-0 2 * * *   /usr/bin/python3 /path/to/six6/skill-monitor/scripts/pulse.py nightly
-0 14 * * 0  /usr/bin/python3 /path/to/six6/skill-monitor/scripts/pulse.py idle
+*/5 * * * * /usr/bin/python3 /path/to/six6/skill-monitor/scripts/pulse.py --base-dir /path/to/agent/root heartbeat >> /tmp/agent_heartbeat.log 2>&1
+0 10 * * *  /usr/bin/python3 /path/to/six6/skill-monitor/scripts/pulse.py --base-dir /path/to/agent/root daily
+0 2 * * *   /usr/bin/python3 /path/to/six6/skill-monitor/scripts/pulse.py --base-dir /path/to/agent/root nightly
+0 14 * * 0  /usr/bin/python3 /path/to/six6/skill-monitor/scripts/pulse.py --base-dir /path/to/agent/root idle
 ```

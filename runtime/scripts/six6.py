@@ -3,6 +3,7 @@ import argparse
 import datetime
 import json
 import os
+import shutil
 import subprocess
 import sys
 
@@ -107,7 +108,7 @@ def doctor(base_dir):
     checks.append(("base_dir_exists", os.path.isdir(base_dir)))
     checks.append(("memory_dir_exists", os.path.isdir(os.path.join(base_dir, "memory"))))
     checks.append(("data_dir_exists", os.path.isdir(os.path.join(base_dir, "data"))))
-    checks.append(("gh_available", subprocess.run(["which", "gh"], capture_output=True).returncode == 0))
+    checks.append(("gh_available", shutil.which("gh") is not None))
 
     status = "ok" if all(result for _, result in checks) else "warn"
 

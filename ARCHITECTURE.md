@@ -45,7 +45,8 @@ The repository also separates concerns into three supporting layers without chan
 ## 6. skill-monitor (维生系统/心跳)
 - **Role**: Scheduling, health checks, and heartbeat triggers.
 - **Data Flow**:
-  - **Outputs**: Triggers Cron-based execution scripts for other modules. Logs health status to `data/health.json`.
+  - **Outputs**: Triggers Cron-based execution scripts for other modules.
+  - Health status (`data/health.json`) is written by `runtime/scripts/six6.py doctor`.
 
 ## Runtime Contracts
 

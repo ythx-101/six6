@@ -1,0 +1,35 @@
+# six6
+
+> six6 is a zero-dependency, file-based memory and cognition toolkit for AI agents (built for OpenClaw). Six independent Python modules give an agent short- and long-term memory, nightly reflection, daydream-style idea generation, an idea lifecycle "topic lab", an inbox task loop, and a cron heartbeat — all communicating only through Markdown and JSONL files.
+
+Modules (they never import each other):
+
+- skill-memory: short-term context (NOW.md), daily episodic notes (memory/YYYY-MM-DD.md) and core memory (MEMORY.md).
+- skill-meditation: nightly reflection that consolidates daily memory into MEMORY.md (needs an LLM API).
+- skill-daydream: samples past memory fragments to generate idea seeds (needs an LLM API).
+- skill-topic-lab: tracks idea seeds and their maturity; mature seeds can become GitHub Issues via `gh`.
+- skill-autoloop: processes data/inbox.jsonl and dispatches tasks or escalations.
+- skill-monitor: pulse entrypoint (heartbeat, daily, nightly, idle) for cron or systemd.
+
+File protocol: data/inbox.jsonl (queue), data/topic-lab-seeds.jsonl (seeds), NOW.md, MEMORY.md, memory/, data/evolution.md. Closed loop: daydream -> topic-lab -> inbox -> autoloop -> water (topic-lab).
+
+## Docs
+
+- [README](https://github.com/ythx-101/six6/blob/main/README.md): overview, quick start, usage example, FAQ
+- [ARCHITECTURE](https://github.com/ythx-101/six6/blob/main/ARCHITECTURE.md): module data flow
+- [Protocol](https://github.com/ythx-101/six6/blob/main/protocol/README.md): file contracts and schemas
+- [Runtime](https://github.com/ythx-101/six6/blob/main/runtime/README.md): init, validate, doctor, pulse
+- [Distribution](https://github.com/ythx-101/six6/blob/main/distribution/README.md): install and migration
+- [skill-memory](https://github.com/ythx-101/six6/blob/main/skill-memory/README.md)
+- [skill-meditation](https://github.com/ythx-101/six6/blob/main/skill-meditation/README.md)
+- [skill-daydream](https://github.com/ythx-101/six6/blob/main/skill-daydream/README.md)
+- [skill-topic-lab](https://github.com/ythx-101/six6/blob/main/skill-topic-lab/README.md)
+- [skill-autoloop](https://github.com/ythx-101/six6/blob/main/skill-autoloop/README.md)
+- [skill-monitor](https://github.com/ythx-101/six6/blob/main/skill-monitor/README.md)
+
+## Key commands
+
+- `python3 runtime/scripts/six6.py init --base-dir /path/to/agent/root`
+- `python3 runtime/scripts/six6.py validate --base-dir /path/to/agent/root`
+- `python3 runtime/scripts/six6.py doctor --base-dir /path/to/agent/root`
+- `python3 runtime/scripts/six6.py pulse heartbeat --base-dir /path/to/agent/root`

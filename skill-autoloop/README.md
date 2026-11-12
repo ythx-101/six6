@@ -14,7 +14,8 @@ Any system wanting the agent to "do something" must append a JSON line to `data/
 
 ```json
 {"type": "x-todo", "msg": "Read the new paper on LLM memory", "ts": 1712134500}
-{"type": "escalation", "issue_number": 89, "reason": "API Key Expired"}
+{"type": "escalation", "issue_number": 89, "reason": "API Key Expired", "ts": 1712134600}
+{"type": "topic-lab-water", "seed_id": "dd-a1b2c3d4", "ts": 1712134700}
 ```
 
 ## Usage

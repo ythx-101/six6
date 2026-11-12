@@ -22,17 +22,42 @@ def append_deadletter(base_dir, item, reason):
     with open(deadletter_file, "a", encoding="utf-8") as f:
         f.write(json.dumps(payload, ensure_ascii=False) + "\n")
 
-def load_inbox(filepath):
+def read_inbox(filepath):
+    """Return (items, n_lines): parsed items and the count of raw non-empty lines read."""
     if not os.path.exists(filepath):
-        return []
+        return [], 0
     items = []
+    n_lines = 0
     with open(filepath, "r", encoding="utf-8") as f:
         for line in f:
             if line.strip():
+                n_lines += 1
                 try:
                     items.append(json.loads(line))
                 except json.JSONDecodeError:
                     continue
+    return items, n_lines
+
+def load_inbox(filepath):
+    return read_inbox(filepath)[0]
+
+def load_appended(filepath, n_skip):
+    """Items appended after the first n_skip raw non-empty lines."""
+    if not os.path.exists(filepath):
+        return []
+    items = []
+    seen = 0
+    with open(filepath, "r", encoding="utf-8") as f:
+        for line in f:
+            if not line.strip():
+                continue
+            seen += 1
+            if seen <= n_skip:
+                continue
+            try:
+                items.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
     return items
 
 def save_inbox(filepath, items):
@@ -94,7 +119,7 @@ def main():
     args = parser.parse_args()
 
     inbox_file = os.path.join(args.base_dir, "data", "inbox.jsonl")
-    items = load_inbox(inbox_file)
+    items, n_read = read_inbox(inbox_file)
     
     if not items:
         print("📭 Inbox is empty. Nothing to process.")
@@ -112,6 +137,8 @@ def main():
             print(f"❌ Failed to dispatch item: {exc}")
         print("-" * 40)
 
+    # Events appended while we were processing (e.g. seed-watered) must survive.
+    remaining_items.extend(load_appended(inbox_file, n_read))
     save_inbox(inbox_file, remaining_items)
     if remaining_items:
         print(f"⚠️ Inbox processing complete with {len(remaining_items)} failed item(s) retained.")
